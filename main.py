@@ -1,16 +1,17 @@
-from discovery import  GetChessnutAirDevices
+from discovery import GetChessnutAirDevices
 import asyncio
 from bleak import BleakClient
 from constants import INITIALIZASION_CODE, WRITECHARACTERISTICS, READCONFIRMATION, READDATA, convertDict, MASKLOW
 
 
 oldData = None
-CLIENT  = None
+CLIENT = None
+
 
 def printBoard(data):
     """Print the board in a human readable format.
     first two bytes should be 0x01 0x24.
-    The next 32 bytes specify the position. 
+    The next 32 bytes specify the position.
 
     Each square has a value specifying the piece:
 Value 0 1 2 3 4 5 6 7 8 9 A B C
@@ -30,11 +31,13 @@ So the first byte's value of 0x58 means a black rook (0x8) on H8 and a black kni
 G8 and the second byte's value of 0x23 means a black bishop (0x3) on F8 and a black king (0x2)
 on E8.
     """
-    for counterColum in range(0,8):
+    breakpoint()
+    for counterColum in range(0, 8):
         print(8-counterColum, " ", end=" ")
         row = reversed(data[counterColum*4:counterColum*4+4])
         for b in row:
-            print (convertDict[b >> 4],  convertDict[b & MASKLOW], end=" ")
+            breakpoint()
+            print(convertDict[b >> 4],  convertDict[b & MASKLOW], end=" ")
         print("")
     print("    a b c d e f g h\n\n")
 
@@ -58,17 +61,18 @@ the controls) would be:
 To turn off all LEDs you just send the 10 bytes with the last 8 bytes all as zero values
     """
     def set_bit(v, index, x):
-        """Set the index:th bit of v to 1 if x is truthy, 
+        """Set the index:th bit of v to 1 if x is truthy,
         else to 0, and return the new value."""
         mask = 1 << index   # Compute mask, an integer with just bit 'index' set.
-        v &= ~mask          # Clear the bit indicated by the mask (if x is False)
+        # Clear the bit indicated by the mask (if x is False)
+        v &= ~mask
         if x:
             v |= mask       # If x was True, set the bit indicated by the mask.
         return v            # Return the result, we're done.
 
-
-    led=bytearray([0x0A, 0x08, 0x1, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
-    for counterColum in range(0,8):
+    led = bytearray([0x0A, 0x08, 0x1, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00])
+    for counterColum in range(0, 8):
         row = data[counterColum*4:counterColum*4+4]
         for counter, b in enumerate(row):
             v = led[counterColum + 2]
@@ -99,13 +103,15 @@ async def run(connect, debug=False):
     global CLIENT
     async with BleakClient(connect.device) as client:
         # TODO: this global variable is a derty trick
-        CLIENT=client
+        CLIENT = client
         print(f"Connected: {client.is_connected}")
         # send initialisation string
-        await client.start_notify(READDATA, notification_handler) # start the notification handler
-        await client.write_gatt_char(WRITECHARACTERISTICS, INITIALIZASION_CODE) # send initialisation string
-        await asyncio.sleep(100.0) ## wait 100 seconds
-        await client.stop_notify(READDATA) # stop the notification handler
+        # start the notification handler
+        await client.start_notify(READDATA, notification_handler)
+        # send initialisation string
+        await client.write_gatt_char(WRITECHARACTERISTICS, INITIALIZASION_CODE)
+        await asyncio.sleep(100.0)  # wait 100 seconds
+        await client.stop_notify(READDATA)  # stop the notification handler
 
 
 connect = GetChessnutAirDevices()
@@ -113,5 +119,3 @@ connect = GetChessnutAirDevices()
 asyncio.run(connect.discover())
 # connect to device
 asyncio.run(run(connect))
-
-
